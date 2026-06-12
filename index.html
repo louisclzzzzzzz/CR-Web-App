@@ -370,6 +370,37 @@
       color: var(--color-text);
     }
 
+    /* Email fields */
+    .email-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .email-fields label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-light);
+    }
+
+    .email-fields input {
+      padding: 8px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--color-text);
+    }
+
+    .email-actions {
+      display: flex;
+      gap: 8px;
+    }
+
     /* Footer */
     .app-footer {
       text-align: center;
@@ -462,7 +493,18 @@
           <h2>Email récapitulatif client</h2>
           <button class="btn btn-copy" data-copy-target="email-result">📋 Copier</button>
         </div>
+        <div class="email-fields">
+          <label>Destinataire
+            <input type="email" id="email-to" placeholder="client@exemple.com">
+          </label>
+          <label>Objet
+            <input type="text" id="email-subject" placeholder="Objet de l'email">
+          </label>
+        </div>
         <textarea id="email-result" rows="18"></textarea>
+        <div class="email-actions">
+          <button id="open-outlook-btn" class="btn btn-secondary" style="margin-top: 12px;">📧 Ouvrir dans Outlook</button>
+        </div>
       </div>
     </section>
 
@@ -509,6 +551,9 @@
       const resultsSection = document.getElementById('results-section');
       const crmResult = document.getElementById('crm-result');
       const emailResult = document.getElementById('email-result');
+      const emailToInput = document.getElementById('email-to');
+      const emailSubjectInput = document.getElementById('email-subject');
+      const openOutlookBtn = document.getElementById('open-outlook-btn');
 
       // --- State ---
       let currentAudioBlob = null;
@@ -650,11 +695,13 @@
 
           // Step 2: structured generation
           setStepState(stepGenerate, 'active');
-          const { compteRendu, email } = await generateSummary(transcript);
+          const { compteRendu, email, objet } = await generateSummary(transcript);
           setStepState(stepGenerate, 'done');
 
           crmResult.value = compteRendu;
           emailResult.value = email;
+          emailSubjectInput.value = objet;
+          emailToInput.value = '';
           resultsSection.classList.remove('hidden');
         } catch (err) {
           showError(err.message || 'Une erreur inattendue est survenue.');
@@ -721,9 +768,11 @@
 
 2. "email" : un email récapitulatif destiné au client, formel, synthétique et prêt à être envoyé tel quel (avec formule d'introduction et de politesse), résumant les points clés et les prochaines étapes.
 
+3. "objet" : l'objet (sujet) de cet email, court et clair (sans guillemets).
+
 Réponds UNIQUEMENT avec un objet JSON valide de la forme :
-{"compte_rendu": "...", "email": "..."}
-Le contenu des deux champs doit être du texte brut avec des retours à la ligne (pas de markdown, pas de balises HTML).`;
+{"compte_rendu": "...", "email": "...", "objet": "..."}
+Le contenu de "compte_rendu" et "email" doit être du texte brut avec des retours à la ligne (pas de markdown, pas de balises HTML).`;
 
         const response = await fetch(CHAT_PROXY_URL, {
           method: 'POST',
@@ -761,6 +810,7 @@ Le contenu des deux champs doit être du texte brut avec des retours à la ligne
         return {
           compteRendu: parsed.compte_rendu || '',
           email: parsed.email || '',
+          objet: parsed.objet || '',
         };
       }
 
@@ -774,6 +824,14 @@ Le contenu des deux champs doit être du texte brut avec des retours à la ligne
         }
         return `Erreur lors de la ${context} (HTTP ${response.status}) : ${detail}`;
       }
+
+      // --- Open in Outlook ---
+      openOutlookBtn.addEventListener('click', () => {
+        const to = encodeURIComponent(emailToInput.value.trim());
+        const subject = encodeURIComponent(emailSubjectInput.value.trim());
+        const body = encodeURIComponent(emailResult.value.replace(/\n/g, '\r\n'));
+        window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+      });
 
       // --- Copy buttons ---
       document.querySelectorAll('.btn-copy').forEach((btn) => {
