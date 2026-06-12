@@ -72,30 +72,6 @@
       font-weight: 600;
     }
 
-    /* Config */
-    .field-row {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .field-row label {
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    .api-key-input {
-      display: flex;
-      gap: 8px;
-    }
-
-    .api-key-input input {
-      flex: 1;
-    }
-
-    input[type="password"],
-    input[type="text"],
     input[type="file"] {
       padding: 10px 12px;
       border: 1px solid var(--color-border);
@@ -103,12 +79,6 @@
       font-size: 14px;
       background: #fff;
       color: var(--color-text);
-    }
-
-    input[type="password"]:focus,
-    input[type="text"]:focus {
-      outline: 2px solid var(--color-primary);
-      outline-offset: 1px;
     }
 
     .hint {
@@ -223,15 +193,6 @@
       justify-content: center;
       padding: 14px;
       font-size: 15px;
-    }
-
-    .btn-icon {
-      background: #fff;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 16px;
     }
 
     .btn-copy {
@@ -431,23 +392,6 @@
       <p class="subtitle">Générez automatiquement un compte-rendu CRM et un email récapitulatif à partir d'un enregistrement audio</p>
     </header>
 
-    <!-- Configuration API -->
-    <section class="card" id="config-section">
-      <h2>Configuration</h2>
-      <div class="field-row">
-        <label for="api-key">Clé API Mistral</label>
-        <div class="api-key-input">
-          <input type="password" id="api-key" placeholder="Collez votre clé API ici">
-          <button id="toggle-key-visibility" class="btn-icon" type="button" title="Afficher/masquer la clé">👁</button>
-        </div>
-      </div>
-      <p class="hint">
-        Votre clé est stockée uniquement dans votre navigateur (localStorage) et n'est envoyée qu'à l'API Mistral.
-        Aucune donnée n'est transmise à un autre serveur.
-      </p>
-      <div id="config-status" class="status-msg"></div>
-    </section>
-
     <!-- Saisie audio -->
     <section class="card" id="audio-section">
       <h2>1. Audio du rendez-vous</h2>
@@ -521,7 +465,7 @@
     </section>
 
     <footer class="app-footer">
-      <p>Application 100% côté client — aucune donnée n'est stockée ou transmise hors de l'API Mistral.</p>
+      <p>L'audio et la transcription sont envoyés uniquement au proxy de cette application, qui relaie les requêtes vers l'API Mistral.</p>
     </footer>
   </div>
 
@@ -529,17 +473,12 @@
     (() => {
       'use strict';
 
-      const MISTRAL_TRANSCRIPTION_URL = 'https://api.mistral.ai/v1/audio/transcriptions';
-      const MISTRAL_CHAT_URL = 'https://api.mistral.ai/v1/chat/completions';
+      const TRANSCRIBE_PROXY_URL = '/api/transcribe';
+      const CHAT_PROXY_URL = '/api/chat';
       const TRANSCRIPTION_MODEL = 'voxtral-mini-latest';
       const CHAT_MODEL = 'mistral-large-latest';
-      const API_KEY_STORAGE_KEY = 'mistral_api_key';
 
       // --- Element references ---
-      const apiKeyInput = document.getElementById('api-key');
-      const toggleKeyBtn = document.getElementById('toggle-key-visibility');
-      const configStatus = document.getElementById('config-status');
-
       const tabBtns = document.querySelectorAll('.tab-btn');
       const tabPanels = document.querySelectorAll('.tab-panel');
 
@@ -574,31 +513,6 @@
       let recordedChunks = [];
       let recordTimerInterval = null;
       let recordSeconds = 0;
-
-      // --- Init: load API key from localStorage ---
-      const savedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-      if (savedKey) {
-        apiKeyInput.value = savedKey;
-        configStatus.textContent = 'Clé API chargée depuis ce navigateur.';
-        configStatus.className = 'status-msg success';
-      }
-
-      apiKeyInput.addEventListener('input', () => {
-        const value = apiKeyInput.value.trim();
-        if (value) {
-          localStorage.setItem(API_KEY_STORAGE_KEY, value);
-          configStatus.textContent = 'Clé API enregistrée localement.';
-          configStatus.className = 'status-msg success';
-        } else {
-          localStorage.removeItem(API_KEY_STORAGE_KEY);
-          configStatus.textContent = '';
-          configStatus.className = 'status-msg';
-        }
-      });
-
-      toggleKeyBtn.addEventListener('click', () => {
-        apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
-      });
 
       // --- Tabs ---
       tabBtns.forEach((btn) => {
@@ -694,11 +608,6 @@
 
       // --- Generation pipeline ---
       generateBtn.addEventListener('click', async () => {
-        const apiKey = apiKeyInput.value.trim();
-        if (!apiKey) {
-          showError('Veuillez saisir votre clé API Mistral avant de continuer.');
-          return;
-        }
         if (!currentAudioBlob) {
           showError('Veuillez enregistrer ou importer un fichier audio avant de continuer.');
           return;
@@ -709,7 +618,7 @@
         try {
           // Step 1: transcription
           setStepState(stepTranscribe, 'active');
-          const transcript = await transcribeAudio(apiKey, currentAudioBlob, currentAudioFilename);
+          const transcript = await transcribeAudio(currentAudioBlob, currentAudioFilename);
           setStepState(stepTranscribe, 'done');
 
           transcriptText.value = transcript;
@@ -721,7 +630,7 @@
 
           // Step 2: structured generation
           setStepState(stepGenerate, 'active');
-          const { compteRendu, email } = await generateSummary(apiKey, transcript);
+          const { compteRendu, email } = await generateSummary(transcript);
           setStepState(stepGenerate, 'done');
 
           crmResult.value = compteRendu;
@@ -760,16 +669,13 @@
       }
 
       // --- API calls ---
-      async function transcribeAudio(apiKey, blob, filename) {
+      async function transcribeAudio(blob, filename) {
         const formData = new FormData();
         formData.append('file', blob, filename);
         formData.append('model', TRANSCRIPTION_MODEL);
 
-        const response = await fetch(MISTRAL_TRANSCRIPTION_URL, {
+        const response = await fetch(TRANSCRIBE_PROXY_URL, {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
           body: formData,
         });
 
@@ -781,7 +687,7 @@
         return data.text || '';
       }
 
-      async function generateSummary(apiKey, transcript) {
+      async function generateSummary(transcript) {
         const systemPrompt = `Tu es un assistant pour des conseillers en assurance. À partir de la transcription d'un rendez-vous client, tu dois produire deux contenus distincts :
 
 1. "compte_rendu" : un compte-rendu CRM structuré, avec les sections suivantes (utilise des titres clairs et des puces) :
@@ -799,10 +705,9 @@ Réponds UNIQUEMENT avec un objet JSON valide de la forme :
 {"compte_rendu": "...", "email": "..."}
 Le contenu des deux champs doit être du texte brut avec des retours à la ligne (pas de markdown, pas de balises HTML).`;
 
-        const response = await fetch(MISTRAL_CHAT_URL, {
+        const response = await fetch(CHAT_PROXY_URL, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -843,12 +748,9 @@ Le contenu des deux champs doit être du texte brut avec des retours à la ligne
         let detail = '';
         try {
           const data = await response.json();
-          detail = data.message || data.error?.message || JSON.stringify(data);
+          detail = data.message || data.error?.message || data.error || JSON.stringify(data);
         } catch {
           detail = response.statusText;
-        }
-        if (response.status === 401) {
-          return `Clé API invalide ou non autorisée (${context}).`;
         }
         return `Erreur lors de la ${context} (HTTP ${response.status}) : ${detail}`;
       }
