@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compte-rendu de rendez-vous client — Assistant Assurance</title>
+  <style>
+    :root {
+      --color-primary: #1d4ed8;
+      --color-primary-hover: #1e40af;
+      --color-secondary: #64748b;
+      --color-bg: #f4f6f9;
+      --color-card: #ffffff;
+      --color-border: #e1e5ec;
+      --color-text: #1f2937;
+      --color-text-light: #6b7280;
+      --color-success: #16803c;
+      --color-error: #b42318;
+      --color-error-bg: #fef3f2;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.5;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .app-header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--color-text-light);
+      font-size: 15px;
+    }
+
+    .card {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    /* Config */
+    .field-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .field-row label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .api-key-input {
+      display: flex;
+      gap: 8px;
+    }
+
+    .api-key-input input {
+      flex: 1;
+    }
+
+    input[type="password"],
+    input[type="text"],
+    input[type="file"] {
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      background: #fff;
+      color: var(--color-text);
+    }
+
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--color-text-light);
+      margin: 8px 0 0;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-light);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Recorder */
+    .recorder-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .timer {
+      font-family: "SF Mono", "Consolas", monospace;
+      font-size: 16px;
+      color: var(--color-text-light);
+      min-width: 50px;
+    }
+
+    .upload-controls {
+      display: flex;
+      align-items: center;
+    }
+
+    /* Audio preview */
+    .audio-preview {
+      margin-top: 16px;
+    }
+
+    .audio-preview audio {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--color-text);
+      border-color: var(--color-border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #f0f2f5;
+    }
+
+    .btn-large {
+      width: 100%;
+      justify-content: center;
+      padding: 14px;
+      font-size: 15px;
+    }
+
+    .btn-icon {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .btn-copy {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--color-text);
+    }
+
+    .btn-copy:hover {
+      background: #f0f2f5;
+    }
+
+    .btn-copy.copied {
+      background: #ecfdf3;
+      color: var(--color-success);
+      border-color: #abefc6;
+    }
+
+    /* Status messages */
+    .status-msg {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--color-text-light);
+      min-height: 20px;
+    }
+
+    .status-msg.error {
+      color: var(--color-error);
+    }
+
+    .status-msg.success {
+      color: var(--color-success);
+    }
+
+    /* Progress */
+    .progress {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .progress.hidden {
+      display: none;
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--color-text-light);
+      opacity: 0.4;
+    }
+
+    .progress-step.active {
+      opacity: 1;
+      color: var(--color-text);
+    }
+
+    .progress-step.done {
+      opacity: 1;
+      color: var(--color-success);
+    }
+
+    .progress-step.done .spinner {
+      visibility: hidden;
+    }
+
+    .progress-step.done::before {
+      content: "✓";
+      font-weight: 700;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      visibility: hidden;
+    }
+
+    .progress-step.active .spinner {
+      visibility: visible;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Error banner */
+    .error-banner {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--color-error-bg);
+      border: 1px solid #fda29b;
+      border-radius: var(--radius);
+      color: var(--color-error);
+      font-size: 14px;
+    }
+
+    .error-banner.hidden,
+    .progress.hidden,
+    .hidden {
+      display: none !important;
+    }
+
+    /* Transcript details */
+    .transcript-details {
+      margin-top: 16px;
+    }
+
+    .transcript-details summary {
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .transcript-details textarea {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      font-family: "SF Mono", "Consolas", monospace;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    /* Results */
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .results.hidden {
+      display: none;
+    }
+
+    .result-card {
+      margin-bottom: 0;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .result-header h2 {
+      margin: 0;
+    }
+
+    .result-card textarea {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: vertical;
+      color: var(--color-text);
+    }
+
+    /* Footer */
+    .app-footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 13px;
+      color: var(--color-text-light);
+    }
+
+    @media (max-width: 800px) {
+      .results {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>Assistant Compte-rendu Client</h1>
+      <p class="subtitle">Générez automatiquement un compte-rendu CRM et un email récapitulatif à partir d'un enregistrement audio</p>
+    </header>
+
+    <!-- Configuration API -->
+    <section class="card" id="config-section">
+      <h2>Configuration</h2>
+      <div class="field-row">
+        <label for="api-key">Clé API Mistral</label>
+        <div class="api-key-input">
+          <input type="password" id="api-key" placeholder="Collez votre clé API ici">
+          <button id="toggle-key-visibility" class="btn-icon" type="button" title="Afficher/masquer la clé">👁</button>
+        </div>
+      </div>
+      <p class="hint">
+        Votre clé est stockée uniquement dans votre navigateur (localStorage) et n'est envoyée qu'à l'API Mistral.
+        Aucune donnée n'est transmise à un autre serveur.
+      </p>
+      <div id="config-status" class="status-msg"></div>
+    </section>
+
+    <!-- Saisie audio -->
+    <section class="card" id="audio-section">
+      <h2>1. Audio du rendez-vous</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="record">🎙 Dicter en direct</button>
+        <button class="tab-btn" data-tab="upload">📁 Importer un fichier</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-record">
+        <div class="recorder-controls">
+          <button id="start-record" class="btn btn-primary">● Démarrer l'enregistrement</button>
+          <button id="stop-record" class="btn btn-secondary" disabled>■ Arrêter</button>
+          <span id="record-timer" class="timer">00:00</span>
+        </div>
+        <div id="record-status" class="status-msg"></div>
+      </div>
+
+      <div class="tab-panel" id="tab-upload">
+        <div class="upload-controls">
+          <input type="file" id="audio-file" accept=".mp3,.wav,.m4a,audio/*">
+        </div>
+        <div id="upload-status" class="status-msg"></div>
+      </div>
+
+      <div id="audio-preview-wrap" class="audio-preview hidden">
+        <p class="hint">Audio prêt :</p>
+        <audio id="audio-preview" controls></audio>
+      </div>
+    </section>
+
+    <!-- Génération -->
+    <section class="card" id="generate-section">
+      <h2>2. Génération du compte-rendu</h2>
+      <button id="generate-btn" class="btn btn-primary btn-large" disabled>Générer le compte-rendu</button>
+
+      <div id="progress" class="progress hidden">
+        <div class="progress-step" id="step-transcribe">
+          <span class="spinner"></span> Transcription de l'audio en cours...
+        </div>
+        <div class="progress-step" id="step-generate">
+          <span class="spinner"></span> Génération du compte-rendu et de l'email...
+        </div>
+      </div>
+
+      <div id="error-banner" class="error-banner hidden"></div>
+
+      <details id="transcript-details" class="transcript-details hidden">
+        <summary>Voir la transcription brute</summary>
+        <textarea id="transcript-text" readonly rows="8"></textarea>
+      </details>
+    </section>
+
+    <!-- Résultats -->
+    <section class="results hidden" id="results-section">
+      <div class="card result-card">
+        <div class="result-header">
+          <h2>Compte-rendu CRM</h2>
+          <button class="btn btn-copy" data-copy-target="crm-result">📋 Copier</button>
+        </div>
+        <textarea id="crm-result" rows="18"></textarea>
+      </div>
+
+      <div class="card result-card">
+        <div class="result-header">
+          <h2>Email récapitulatif client</h2>
+          <button class="btn btn-copy" data-copy-target="email-result">📋 Copier</button>
+        </div>
+        <textarea id="email-result" rows="18"></textarea>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <p>Application 100% côté client — aucune donnée n'est stockée ou transmise hors de l'API Mistral.</p>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const MISTRAL_TRANSCRIPTION_URL = 'https://api.mistral.ai/v1/audio/transcriptions';
+      const MISTRAL_CHAT_URL = 'https://api.mistral.ai/v1/chat/completions';
+      const TRANSCRIPTION_MODEL = 'voxtral-mini-latest';
+      const CHAT_MODEL = 'mistral-large-latest';
+      const API_KEY_STORAGE_KEY = 'mistral_api_key';
+
+      // --- Element references ---
+      const apiKeyInput = document.getElementById('api-key');
+      const toggleKeyBtn = document.getElementById('toggle-key-visibility');
+      const configStatus = document.getElementById('config-status');
+
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-panel');
+
+      const startRecordBtn = document.getElementById('start-record');
+      const stopRecordBtn = document.getElementById('stop-record');
+      const recordTimer = document.getElementById('record-timer');
+      const recordStatus = document.getElementById('record-status');
+
+      const audioFileInput = document.getElementById('audio-file');
+      const uploadStatus = document.getElementById('upload-status');
+
+      const audioPreviewWrap = document.getElementById('audio-preview-wrap');
+      const audioPreview = document.getElementById('audio-preview');
+
+      const generateBtn = document.getElementById('generate-btn');
+      const progress = document.getElementById('progress');
+      const stepTranscribe = document.getElementById('step-transcribe');
+      const stepGenerate = document.getElementById('step-generate');
+      const errorBanner = document.getElementById('error-banner');
+
+      const transcriptDetails = document.getElementById('transcript-details');
+      const transcriptText = document.getElementById('transcript-text');
+
+      const resultsSection = document.getElementById('results-section');
+      const crmResult = document.getElementById('crm-result');
+      const emailResult = document.getElementById('email-result');
+
+      // --- State ---
+      let currentAudioBlob = null;
+      let currentAudioFilename = 'enregistrement.webm';
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      let recordTimerInterval = null;
+      let recordSeconds = 0;
+
+      // --- Init: load API key from localStorage ---
+      const savedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+      if (savedKey) {
+        apiKeyInput.value = savedKey;
+        configStatus.textContent = 'Clé API chargée depuis ce navigateur.';
+        configStatus.className = 'status-msg success';
+      }
+
+      apiKeyInput.addEventListener('input', () => {
+        const value = apiKeyInput.value.trim();
+        if (value) {
+          localStorage.setItem(API_KEY_STORAGE_KEY, value);
+          configStatus.textContent = 'Clé API enregistrée localement.';
+          configStatus.className = 'status-msg success';
+        } else {
+          localStorage.removeItem(API_KEY_STORAGE_KEY);
+          configStatus.textContent = '';
+          configStatus.className = 'status-msg';
+        }
+      });
+
+      toggleKeyBtn.addEventListener('click', () => {
+        apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+      });
+
+      // --- Tabs ---
+      tabBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          tabBtns.forEach((b) => b.classList.remove('active'));
+          tabPanels.forEach((p) => p.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        });
+      });
+
+      // --- Live recording ---
+      startRecordBtn.addEventListener('click', async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          recordedChunks = [];
+
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+            ? 'audio/webm'
+            : '';
+          mediaRecorder = mimeType
+            ? new MediaRecorder(stream, { mimeType })
+            : new MediaRecorder(stream);
+
+          mediaRecorder.addEventListener('dataavailable', (e) => {
+            if (e.data && e.data.size > 0) {
+              recordedChunks.push(e.data);
+            }
+          });
+
+          mediaRecorder.addEventListener('stop', () => {
+            const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            currentAudioBlob = blob;
+            const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
+            currentAudioFilename = `enregistrement.${ext}`;
+            showAudioPreview(blob);
+            stream.getTracks().forEach((track) => track.stop());
+            recordStatus.textContent = 'Enregistrement terminé.';
+            recordStatus.className = 'status-msg success';
+            generateBtn.disabled = false;
+          });
+
+          mediaRecorder.start();
+          recordSeconds = 0;
+          updateRecordTimer();
+          recordTimerInterval = setInterval(() => {
+            recordSeconds += 1;
+            updateRecordTimer();
+          }, 1000);
+
+          startRecordBtn.disabled = true;
+          stopRecordBtn.disabled = false;
+          recordStatus.textContent = 'Enregistrement en cours...';
+          recordStatus.className = 'status-msg';
+        } catch (err) {
+          recordStatus.textContent = `Impossible d'accéder au microphone : ${err.message}`;
+          recordStatus.className = 'status-msg error';
+        }
+      });
+
+      stopRecordBtn.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        clearInterval(recordTimerInterval);
+        startRecordBtn.disabled = false;
+        stopRecordBtn.disabled = true;
+      });
+
+      function updateRecordTimer() {
+        const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+        const secs = String(recordSeconds % 60).padStart(2, '0');
+        recordTimer.textContent = `${mins}:${secs}`;
+      }
+
+      // --- File upload ---
+      audioFileInput.addEventListener('change', () => {
+        const file = audioFileInput.files[0];
+        if (!file) return;
+        currentAudioBlob = file;
+        currentAudioFilename = file.name;
+        showAudioPreview(file);
+        uploadStatus.textContent = `Fichier sélectionné : ${file.name}`;
+        uploadStatus.className = 'status-msg success';
+        generateBtn.disabled = false;
+      });
+
+      function showAudioPreview(blob) {
+        const url = URL.createObjectURL(blob);
+        audioPreview.src = url;
+        audioPreviewWrap.classList.remove('hidden');
+      }
+
+      // --- Generation pipeline ---
+      generateBtn.addEventListener('click', async () => {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+          showError('Veuillez saisir votre clé API Mistral avant de continuer.');
+          return;
+        }
+        if (!currentAudioBlob) {
+          showError('Veuillez enregistrer ou importer un fichier audio avant de continuer.');
+          return;
+        }
+
+        resetUiBeforeGeneration();
+
+        try {
+          // Step 1: transcription
+          setStepState(stepTranscribe, 'active');
+          const transcript = await transcribeAudio(apiKey, currentAudioBlob, currentAudioFilename);
+          setStepState(stepTranscribe, 'done');
+
+          transcriptText.value = transcript;
+          transcriptDetails.classList.remove('hidden');
+
+          if (!transcript.trim()) {
+            throw new Error('La transcription est vide. Vérifiez la qualité de l\'audio et réessayez.');
+          }
+
+          // Step 2: structured generation
+          setStepState(stepGenerate, 'active');
+          const { compteRendu, email } = await generateSummary(apiKey, transcript);
+          setStepState(stepGenerate, 'done');
+
+          crmResult.value = compteRendu;
+          emailResult.value = email;
+          resultsSection.classList.remove('hidden');
+        } catch (err) {
+          showError(err.message || 'Une erreur inattendue est survenue.');
+          progress.classList.add('hidden');
+        } finally {
+          generateBtn.disabled = false;
+        }
+      });
+
+      function resetUiBeforeGeneration() {
+        errorBanner.classList.add('hidden');
+        errorBanner.textContent = '';
+        resultsSection.classList.add('hidden');
+        transcriptDetails.classList.add('hidden');
+        transcriptText.value = '';
+        crmResult.value = '';
+        emailResult.value = '';
+        progress.classList.remove('hidden');
+        setStepState(stepTranscribe, '');
+        setStepState(stepGenerate, '');
+        generateBtn.disabled = true;
+      }
+
+      function setStepState(el, state) {
+        el.classList.remove('active', 'done');
+        if (state) el.classList.add(state);
+      }
+
+      function showError(message) {
+        errorBanner.textContent = message;
+        errorBanner.classList.remove('hidden');
+      }
+
+      // --- API calls ---
+      async function transcribeAudio(apiKey, blob, filename) {
+        const formData = new FormData();
+        formData.append('file', blob, filename);
+        formData.append('model', TRANSCRIPTION_MODEL);
+
+        const response = await fetch(MISTRAL_TRANSCRIPTION_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(await formatApiError(response, 'transcription audio'));
+        }
+
+        const data = await response.json();
+        return data.text || '';
+      }
+
+      async function generateSummary(apiKey, transcript) {
+        const systemPrompt = `Tu es un assistant pour des conseillers en assurance. À partir de la transcription d'un rendez-vous client, tu dois produire deux contenus distincts :
+
+1. "compte_rendu" : un compte-rendu CRM structuré, avec les sections suivantes (utilise des titres clairs et des puces) :
+   - Date du rendez-vous (si mentionnée, sinon indique "Non précisée")
+   - Client (nom si mentionné, sinon "Non précisé")
+   - Objet du rendez-vous
+   - Points abordés
+   - Décisions prises
+   - Actions à suivre
+   - Prochaine échéance
+
+2. "email" : un email récapitulatif destiné au client, formel, synthétique et prêt à être envoyé tel quel (avec formule d'introduction et de politesse), résumant les points clés et les prochaines étapes.
+
+Réponds UNIQUEMENT avec un objet JSON valide de la forme :
+{"compte_rendu": "...", "email": "..."}
+Le contenu des deux champs doit être du texte brut avec des retours à la ligne (pas de markdown, pas de balises HTML).`;
+
+        const response = await fetch(MISTRAL_CHAT_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: CHAT_MODEL,
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Transcription du rendez-vous :\n\n${transcript}` },
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(await formatApiError(response, 'génération du compte-rendu'));
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) {
+          throw new Error('Réponse inattendue de l\'API Mistral (contenu vide).');
+        }
+
+        let parsed;
+        try {
+          parsed = JSON.parse(content);
+        } catch {
+          throw new Error('La réponse de l\'API n\'a pas pu être interprétée comme du JSON valide.');
+        }
+
+        return {
+          compteRendu: parsed.compte_rendu || '',
+          email: parsed.email || '',
+        };
+      }
+
+      async function formatApiError(response, context) {
+        let detail = '';
+        try {
+          const data = await response.json();
+          detail = data.message || data.error?.message || JSON.stringify(data);
+        } catch {
+          detail = response.statusText;
+        }
+        if (response.status === 401) {
+          return `Clé API invalide ou non autorisée (${context}).`;
+        }
+        return `Erreur lors de la ${context} (HTTP ${response.status}) : ${detail}`;
+      }
+
+      // --- Copy buttons ---
+      document.querySelectorAll('.btn-copy').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const targetId = btn.dataset.copyTarget;
+          const textarea = document.getElementById(targetId);
+          try {
+            await navigator.clipboard.writeText(textarea.value);
+            const original = btn.textContent;
+            btn.textContent = '✓ Copié';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = original;
+              btn.classList.remove('copied');
+            }, 1500);
+          } catch {
+            textarea.select();
+            document.execCommand('copy');
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
