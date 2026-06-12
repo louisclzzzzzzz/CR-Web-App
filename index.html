@@ -407,6 +407,7 @@
           <button id="stop-record" class="btn btn-secondary" disabled>■ Arrêter</button>
           <span id="record-timer" class="timer">00:00</span>
         </div>
+        <p class="hint">Durée maximale : 1 minute.</p>
         <div id="record-status" class="status-msg"></div>
       </div>
 
@@ -414,6 +415,7 @@
         <div class="upload-controls">
           <input type="file" id="audio-file" accept=".mp3,.wav,.m4a,audio/*">
         </div>
+        <p class="hint">Taille maximale : 4,5 Mo.</p>
         <div id="upload-status" class="status-msg"></div>
       </div>
 
@@ -477,6 +479,8 @@
       const CHAT_PROXY_URL = '/api/chat';
       const TRANSCRIPTION_MODEL = 'voxtral-mini-latest';
       const CHAT_MODEL = 'mistral-large-latest';
+      const MAX_UPLOAD_BYTES = 4.5 * 1024 * 1024;
+      const MAX_RECORDING_SECONDS = 60;
 
       // --- Element references ---
       const tabBtns = document.querySelectorAll('.tab-btn');
@@ -550,7 +554,9 @@
             currentAudioFilename = `enregistrement.${ext}`;
             showAudioPreview(blob);
             stream.getTracks().forEach((track) => track.stop());
-            recordStatus.textContent = 'Enregistrement terminé.';
+            recordStatus.textContent = recordSeconds >= MAX_RECORDING_SECONDS
+              ? `Enregistrement terminé (limite de ${MAX_RECORDING_SECONDS} secondes atteinte).`
+              : 'Enregistrement terminé.';
             recordStatus.className = 'status-msg success';
             generateBtn.disabled = false;
           });
@@ -561,11 +567,14 @@
           recordTimerInterval = setInterval(() => {
             recordSeconds += 1;
             updateRecordTimer();
+            if (recordSeconds >= MAX_RECORDING_SECONDS) {
+              stopRecordBtn.click();
+            }
           }, 1000);
 
           startRecordBtn.disabled = true;
           stopRecordBtn.disabled = false;
-          recordStatus.textContent = 'Enregistrement en cours...';
+          recordStatus.textContent = `Enregistrement en cours... (limite : ${MAX_RECORDING_SECONDS} secondes)`;
           recordStatus.className = 'status-msg';
         } catch (err) {
           recordStatus.textContent = `Impossible d'accéder au microphone : ${err.message}`;
@@ -592,6 +601,17 @@
       audioFileInput.addEventListener('change', () => {
         const file = audioFileInput.files[0];
         if (!file) return;
+
+        if (file.size > MAX_UPLOAD_BYTES) {
+          audioFileInput.value = '';
+          currentAudioBlob = null;
+          generateBtn.disabled = true;
+          audioPreviewWrap.classList.add('hidden');
+          uploadStatus.textContent = `Le fichier dépasse la taille maximale autorisée (4,5 Mo). Taille du fichier : ${(file.size / (1024 * 1024)).toFixed(1)} Mo.`;
+          uploadStatus.className = 'status-msg error';
+          return;
+        }
+
         currentAudioBlob = file;
         currentAudioFilename = file.name;
         showAudioPreview(file);
